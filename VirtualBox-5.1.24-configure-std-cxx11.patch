@@ -1,0 +1,11 @@
+--- VirtualBox-5.1.24/configure.old	2017-07-17 18:56:29.000000000 +0300
++++ VirtualBox-5.1.24/configure	2017-07-23 14:12:36.314694108 +0300
+@@ -136,7 +136,7 @@ INCVNCSERVER=""
+ LIBVNCSERVER="-lvncserver"
+ INCDEVMAPPER=""
+ LIBDEVMAPPER="-ldevmapper"
+-CXX_FLAGS=""
++CXX_FLAGS="-std=c++11"
+ if [ "$OS" = "freebsd" ]; then
+   INCCURL="-I/usr/local/include"
+   LIBCURL="-L/usr/local/lib -lcurl"

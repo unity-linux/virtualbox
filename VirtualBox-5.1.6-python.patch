@@ -1,0 +1,12 @@
+diff -up VirtualBox-5.1.6/src/libs/xpcom18a4/python/Makefile.kmk.python VirtualBox-5.1.6/src/libs/xpcom18a4/python/Makefile.kmk
+--- VirtualBox-5.1.6/src/libs/xpcom18a4/python/Makefile.kmk.python	2016-09-12 18:20:10.000000000 +0200
++++ VirtualBox-5.1.6/src/libs/xpcom18a4/python/Makefile.kmk	2016-09-27 14:41:31.329030705 +0200
+@@ -19,7 +19,7 @@ SUB_DEPTH = ../../../..
+ include $(KBUILD_PATH)/subheader.kmk
+ 
+ ifdef VBOX_WITH_MULTIVERSION_PYTHON
+- VBOX_MULTIPYTHON = 1
++ VBOX_MULTIPYTHON = $(VBOX_WITH_MULTIVERSION_PYTHON)
+ else
+  VBOX_MULTIPYTHON = 0
+ endif

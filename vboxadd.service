@@ -1,0 +1,10 @@
+[Unit]
+Description=VirtualBox Guest Addons
+Before=time-sync.target
+
+[Service]
+ExecStart=/usr/sbin/VBoxService -f
+
+[Install]
+WantedBy=multi-user.target
+

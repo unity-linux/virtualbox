@@ -1,0 +1,12 @@
+diff -Nurp VirtualBox-5.1.0.p14/src/VBox/Frontends/VirtualBox/src/net/UIUpdateDefs.cpp VirtualBox-5.1.0.p15/src/VBox/Frontends/VirtualBox/src/net/UIUpdateDefs.cpp
+--- VirtualBox-5.1.0.p14/src/VBox/Frontends/VirtualBox/src/net/UIUpdateDefs.cpp	2016-07-12 17:54:04.000000000 +0300
++++ VirtualBox-5.1.0.p15/src/VBox/Frontends/VirtualBox/src/net/UIUpdateDefs.cpp	2016-07-13 01:43:54.538249605 +0300
+@@ -163,7 +163,7 @@ void VBoxUpdateData::decode()
+             if (m_dayList.isEmpty())
+                 populate();
+             PeriodType index = (PeriodType)m_dayList.indexOf(VBoxUpdateDay(QString(), parser[0]));
+-            m_periodIndex = index == PeriodUndefined ? Period1Day : index;
++            m_periodIndex = index == PeriodUndefined ? PeriodNever : index;
+         }
+ 
+         /* Parse 'date' value: */

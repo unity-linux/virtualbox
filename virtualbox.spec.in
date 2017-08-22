@@ -1,0 +1,737 @@
+#
+#        NOTE!!
+#
+# When updating this package, remember to push
+# kmod-vboxadditions and kmod-virtualbox too
+#
+%define ver		@VERSION@
+%define rel		@DISTREL@
+%define kname		vboxdrv
+%define oname		VirtualBox
+%define srcname		%{oname}-%{version}
+%define distname	%{oname}-%{version}
+%define dirname		vbox-ose
+%define pkgver		%{ver}%{?svndate:-%{svndate}}
+
+%define vboxlibdir	%{_libdir}/%{name}
+%define vboxdatadir	%{_datadir}/%{name}
+%define vboxpydir	%{py_puresitedir}/vboxapi
+
+# (doktor5000) add conditional for build of the webservice, takes quite long to build locally
+%define build_gsoap	1
+
+# (tmb) add conditional to build vboxvideo ddx (obsolete since switch to virtualbox 5.1 series)
+%define build_vboxvideo 0
+
+%define build_additions	1
+%define build_doc	1
+%define build_sdk	1
+
+%ifarch %{ix86}
+%define vbox_platform linux.x86
+%endif
+%ifarch x86_64
+%define vbox_platform linux.amd64
+%endif
+
+# nuke vbox-specific dependencies, dont provide libGL.so.1
+%global __provides_exclude ^VBox|\^libGL\\.so\\.1
+%global __requires_exclude ^VBox
+
+%define x11_server_majorver %(pkg-config --modversion xorg-server|awk -F. '{print $1$2}')
+
+Summary:	A general-purpose full virtualizer for x86 hardware
+Name:		virtualbox
+Version:	%{ver}%{?svndate:.%{svndate}}
+Release:	%{rel}%{?dist}
+Source0:	http://download.virtualbox.org/virtualbox/%{ver}/%{oname}-%{ver}.tar.bz2
+# (cg) NB, this module loading "init" script should just be replaced with 
+# /usr/lib/modules-load.d/ snippets to load it statically (assuming it's even
+# needed at all these days)
+Source2:	virtualbox.init
+Source3:	vboxadd.service
+Source4:	virtualbox-tmpfiles.conf
+Source10:	virtualbox.png
+Source11:	virtualbox.16.png
+Source12:	virtualbox.48.png
+# (tmb: mga icons submitted upstream 2011-10-22)
+Source20:       os_mageia.png
+Source21:       os_mageia_64.png
+Patch2:		VirtualBox-5.1.0-kernelrelease.patch
+Patch3:		VirtualBox-5.1.0-futex.patch
+Patch4:		VirtualBox-5.1.0-fix-vboxadd-req.patch
+# don't check for:
+# - mkisofs: we're not going to build the additions .iso file
+# - makeself: we're not going to create the stanalone .run installers
+Patch9:		VirtualBox-5.1.0-dont-check-for-mkisofs-or-makeself.patch
+# add Mageia support (tmb: submitted upstream 2011-10-22)
+Patch13:	VirtualBox-5.1.24-add-Mageia-support.patch
+# (tmb) Default to Mageia
+Patch14:	VirtualBox-5.1.0-default-to-Mageia.patch
+# (tmb) default to no update checks as we provide rpms
+Patch15:	VirtualBox-5.1.0-noupdate-check.patch
+# (tmb) fix build with gsoap >= 2.8.13
+Patch16:	VirtualBox-5.1.4-fix-build-with-gsoap-2.8.13-and-up.patch
+# (tmb) revert to working Vbox.sh reading config file
+Patch18:	VirtualBox-5.1.0-revert-VBox.sh.patch
+# fix problems with compiling xpcom18a4/python/src/PyIID.cpp under i586 arch
+Patch19:	VirtualBox-5.1.6-python.patch
+# (tmb) qt5 5.9+ in cauldron wants cxx11 (TTL: unitil gcc 7.1+ lands)
+Patch20:	VirtualBox-5.1.24-configure-std-cxx11.patch
+
+###
+### RPMfusion patches
+### https://pkgs.rpmfusion.org/cgit/free/VirtualBox.git
+###
+# add missing checks for VBOX_USE_SYSTEM_XORG_HEADERS
+# https://www.virtualbox.org/ticket/16052
+Patch50:	VirtualBox-5.0.18-xserver_guest.patch
+%if ! %{build_vboxvideo}
+# dont build vboxvideo ddx:
+Patch51:	VirtualBox-5.0.18-xserver_guest_xorg19.patch
+%endif
+# build against system libs
+Patch52:	VirtualBox-5.1.0-no-bundles.patch
+
+License:	GPLv2
+Group:		Emulators
+Url:		http://www.virtualbox.org/
+ExclusiveArch:	%{ix86} x86_64
+Requires(post):   systemd >= %{systemd_required_version}
+Requires(post):   rpm-helper
+Requires(preun):  rpm-helper
+Requires(postun): rpm-helper
+Requires:	kmod(vboxdrv.ko) = %{version}
+Conflicts:	dkms-%{name} <= 1.5.0-5
+Recommends:	%{name}-doc
+
+BuildRequires:	gsoap
+BuildRequires:	dev86
+BuildRequires:	iasl
+BuildRequires:	nasm
+BuildRequires:	zlib-devel
+BuildRequires:	libxcursor-devel
+BuildRequires:	libxmu-devel
+BuildRequires:	SDL-devel
+BuildRequires:	pkgconfig(Qt5Core)
+BuildRequires:	pkgconfig(Qt5Gui)
+BuildRequires:	pkgconfig(Qt5Widgets)
+BuildRequires:	pkgconfig(Qt5X11Extras)
+BuildRequires:	pkgconfig(Qt5PrintSupport)
+BuildRequires:	pkgconfig(Qt5OpenGL)
+BuildRequires:	qttools5
+BuildRequires:	libIDL-devel
+BuildRequires:	libext2fs-devel
+BuildRequires:	libxslt-proc
+BuildRequires:	libxslt-devel 
+BuildRequires:	pkgconfig(egl)
+BuildRequires:	libxt-devel
+BuildRequires:	libstdc++-static-devel
+BuildRequires:  python-devel
+BuildRequires:  libcap-devel
+BuildRequires:  libxrandr-devel 
+BuildRequires:  libxinerama-devel 
+BuildRequires:  libxcomposite-devel
+BuildRequires:	pulseaudio-devel
+BuildRequires:	kernel-devel-latest
+BuildRequires:  mesaglu-devel 
+BuildRequires:  mesagl-devel 
+BuildRequires:  libxmu-devel
+BuildRequires:	openssl-devel
+BuildRequires:	curl-devel
+BuildRequires:	dkms-minimal
+BuildRequires:	libpam-devel
+BuildRequires:	gawk
+BuildRequires:	x11-server-devel
+BuildRequires:	javapackages-tools
+BuildRequires:	java-devel
+BuildRequires:	device-mapper-devel
+BuildRequires:	boost-devel
+BuildRequires:	libvpx-devel
+%if %{build_doc}
+# for building the user manual pdf file
+BuildRequires:	texlive
+BuildRequires:	texlive-fontsextra
+BuildRequires:	docbook-dtds
+%endif
+BuildRequires:	libxslt-devel
+
+%description
+VirtualBox is a general-purpose full virtualizer for x86 hardware.
+
+%package -n	dkms-%{name}
+Summary:	VirtualBox kernel module
+Group:		System/Kernel and hardware
+Provides:	kmod(vboxdrv.ko) = %{version}
+BuildArch:	noarch
+Requires:	  dkms >= 2.0.19-37
+Requires(post):	  dkms >= 2.0.19-37
+Requires(preun):  dkms >= 2.0.19-37
+Conflicts:	dkms-vboxadditions < 4.0.6
+
+%description -n dkms-%{name}
+Kernel support for VirtualBox.
+
+%if %{build_additions}
+%package 	guest-additions
+Summary:	Additions for VirtualBox guest systems
+Group:		Emulators
+Requires:	kmod(vboxguest.ko)
+Requires:	kmod(vboxsf.ko)
+Requires:	kmod(vboxvideo.ko)
+Requires:	x11-driver-video-vboxvideo
+# guest-additions should require xrandr for auto-resizing of guest display to
+# work without having to restart the X server in the guest VM
+Requires:	xrandr
+Requires(post):   rpm-helper
+Requires(preun):  rpm-helper
+
+%description    guest-additions
+This package contains additions for VirtualBox guest systems.
+It allows to share files with the host system and sync time with host.
+
+%package -n	dkms-vboxadditions
+Summary:	Kernel module for VirtualBox additions
+Group:		System/Kernel and hardware
+Provides:	kmod(vboxguest.ko) = %{version}
+Provides:	kmod(vboxsf.ko) = %{version}
+Provides:	kmod(vboxvideo.ko) = %{version}
+BuildArch:	noarch
+Requires:	  dkms >= 2.0.19-37
+Requires(post):	  dkms >= 2.0.19-37
+Requires(preun):  dkms >= 2.0.19-37
+Obsoletes:	dkms-vboxadd < %{version}-%{release}
+Provides:	dkms-vboxvfs = %{version}-%{release}
+Obsoletes:	dkms-vboxvfs < %{version}-%{release}
+Provides:	dkms-vboxsf = %{version}-%{release}
+Obsoletes:	dkms-vboxsf < %{version}-%{release}
+Provides:	dkms-vboxvideo = %{version}-%{release}
+Obsoletes:	dkms-vboxvideo < %{version}-%{release}
+Conflicts:	dkms-%{name} < 4.0.6
+
+%description -n dkms-vboxadditions
+Kernel module for VirtualBox additions (ideally only needs to be installed
+on the guest OS not on the host OS).
+
+%package -n	x11-driver-video-vboxvideo
+Summary:	The X.org driver for video in VirtualBox guests
+Group:		System/X11
+Recommends:	virtualbox-guest-additions
+%if %{build_vboxvideo}
+Requires:	x11-server-common %(xserver-sdk-abi-requires videodrv)
+%endif
+
+
+%description -n x11-driver-video-vboxvideo
+The X.org driver for video in VirtualBox guests.
+%endif
+
+%if %build_doc
+%package doc
+Summary:	The user manual PDF file for %{name}
+Group:		Documentation
+BuildArch:	noarch
+
+%description doc
+This package contains the user manual PDF file for %{name}.
+%endif
+
+%if %{build_sdk}
+%package devel
+Summary:        %{name} SDK
+Group:          Development/Other
+Requires:       %{name} = %{version}-%{release}
+Requires:       python-%{name} = %{version}-%{release}
+
+%description devel
+This package contains the SDK for %{name}.
+
+
+%package -n python-%{name}
+Summary: %{name} SDK
+Group:	  	  Development/Python
+Requires:       %{name} = %{version}-%{release}
+
+%description -n python-%{name}
+Python XPCOM bindings to %{name}.
+%endif
+
+%prep
+%setup -q -n %{distname}
+%autopatch -p1
+
+# add Mageia images
+cp -a %{SOURCE20} %{SOURCE21} src/VBox/Frontends/VirtualBox/images/
+
+# add our kernel headers in place
+rm -rf fake-linux/
+
+# (doktor5000) this is not safe, on kernel removal sometimes empty directories will be leftover, and build breaks here
+#cp -a $(ls -1dtr /usr/src/kernel-* | tail -n 1) fake-linux
+
+# check all kernel header directories descendingly by age, if the folder we want to copy is owned by rpm 
+# FIXME: is an additional check necessary if headers are suitable for the running kernel ? We may want to build for a different kernel here ...
+for src in $(ls -dt /usr/src/kernel-*); do rpm -qf $src 2>&1 >/dev/null && { cp -a $src fake-linux ; } || continue; done
+
+# Remove some bundled sources before patching.
+rm -rf src/VBox/Additions/x11/x11include
+rm -rf src/VBox/Additions/x11/x11stubs
+rm include/VBox/HostServices/glext.h
+rm include/VBox/HostServices/glxext.h
+# remove unwanted bundled libs
+rm -rf src/libs/libxml2-2.9.4/
+rm -rf src/libs/libpng-1.2.54/
+rm -rf src/libs/zlib-1.2.8/
+
+cat << EOF > LocalConfig.kmk
+VBOX_PATH_APP_PRIVATE_ARCH:=%{vboxlibdir}
+VBOX_WITH_ORIGIN:=
+VBOX_WITH_RUNPATH:=%{vboxlibdir}
+VBOX_PATH_APP_PRIVATE:=%{vboxlibdir}
+VBOX_WITH_TESTCASES =
+VBOX_WITH_TESTSUITE:=
+VBOX_JAVA_HOME := %{java_home}
+VBOX_WITHOUT_ADDITIONS_ISO := 1
+VBOX_USE_SYSTEM_XORG_HEADERS := 1
+XSERVER_VERSION := %{x11_server_majorver}
+VBOX_PATH_APP_DOCS :=%{_defaultdocdir}/virtualbox
+SVN :=
+%ifarch %{ix86}
+VBOX_WITH_MULTIVERSION_PYTHON = 0
+%else
+VBOX_WITH_MULTIVERSION_PYTHON = 1
+%endif
+EOF
+
+%build
+#make -C fake-linux prepare
+export LIBPATH_LIB="%{_lib}"
+./configure \
+%if %build_gsoap
+ --enable-webservice \
+%endif
+ --with-linux=$PWD/fake-linux \
+%if ! %build_doc
+  --disable-docs
+%endif
+
+%if !%{build_additions}
+sed -rie 's/(VBOX_WITH_LINUX_ADDITIONS\s+:=\s+).*/\1/' AutoConfig.kmk
+echo VBOX_WITHOUT_ADDITIONS=1 >> LocalConfig.kmk
+%endif
+
+. ./env.sh
+# (tmb) parallell build is problematic, restrict to -j 4
+kmk -j4 all
+
+%install
+# install vbox components
+mkdir -p %{buildroot}%{vboxlibdir} %{buildroot}%{vboxdatadir} 
+
+(cd out/%{vbox_platform}/release/bin && tar cf - --exclude=additions .) | \
+(cd %{buildroot}%{vboxlibdir} && tar xf -)
+
+# move noarch files to vboxdatadir
+mv %{buildroot}%{vboxlibdir}/{VBox*.sh,*.desktop,*.png} %{buildroot}%{vboxdatadir}
+
+# install service
+mkdir -p %{buildroot}%{_initrddir}
+install -m755 %{SOURCE2} %{buildroot}%{_initrddir}/%{name}
+
+# install wrappers
+mkdir -p %{buildroot}%{_sysconfdir}/vbox
+cat > %{buildroot}%{_sysconfdir}/vbox/vbox.cfg << EOF
+# VirtualBox installation directory
+INSTALL_DIR="%{vboxlibdir}"
+EOF
+mkdir -p %{buildroot}%{_bindir}
+ln -s %{vboxdatadir}/VBox.sh %{buildroot}%{_bindir}/%{oname}
+ln -s %{vboxdatadir}/VBox.sh %{buildroot}%{_bindir}/VBoxManage
+ln -s %{vboxdatadir}/VBox.sh %{buildroot}%{_bindir}/VBoxSDL
+ln -s %{vboxdatadir}/VBox.sh %{buildroot}%{_bindir}/VBoxHeadless
+ln -s %{vboxdatadir}/VBox.sh %{buildroot}%{_bindir}/vboxwebsrv
+
+# provide network control tools in bindir
+ln -s %{vboxlibdir}/VBoxTunctl %{buildroot}%{_bindir}/VBoxTunctl
+ln -s %{vboxlibdir}/VBoxNetAdpCtl %{buildroot}%{_bindir}/VBoxNetAdpCtl
+ln -s %{vboxlibdir}/VBoxNetDHCP %{buildroot}%{_bindir}/VBoxNetDHCP
+
+# add tmpfs dir in /run
+install -m644 -D %{SOURCE4} %{buildroot}%{_tmpfilesdir}/%{name}.conf
+
+# install dkms sources
+mkdir -p %{buildroot}%{_usr}/src/%{name}-%{version}-%{release}
+cat > vboxbuild << EOF
+#!/bin/sh
+set -e
+make -C %{kname} KERN_DIR=\$1
+cp -f %{kname}/Module.symvers vboxnetflt
+cp -f %{kname}/Module.symvers vboxnetadp
+cp -f %{kname}/Module.symvers vboxpci
+make -C vboxnetflt KERN_DIR=\$1
+make -C vboxnetadp KERN_DIR=\$1
+make -C vboxpci KERN_DIR=\$1
+EOF
+install -m 0755 vboxbuild %{buildroot}%{_usr}/src/%{name}-%{version}-%{release}
+mv %{buildroot}%{vboxlibdir}/src/* %{buildroot}%{_usr}/src/%{name}-%{version}-%{release}/
+cat > %{buildroot}%{_usr}/src/%{name}-%{version}-%{release}/dkms.conf << EOF
+MAKE[0]="./vboxbuild \$kernel_source_dir"
+PACKAGE_NAME=%{name}
+PACKAGE_VERSION=%{version}-%{release}
+DEST_MODULE_LOCATION[0]=/kernel/3rdparty/vbox
+BUILT_MODULE_LOCATION[0]=%{kname}/
+BUILT_MODULE_NAME[0]=%{kname}
+DEST_MODULE_LOCATION[1]=/kernel/3rdparty/vbox
+BUILT_MODULE_LOCATION[1]=vboxnetflt/
+BUILT_MODULE_NAME[1]=vboxnetflt
+DEST_MODULE_LOCATION[2]=/kernel/3rdparty/vbox
+BUILT_MODULE_LOCATION[2]=vboxnetadp/
+BUILT_MODULE_NAME[2]=vboxnetadp
+DEST_MODULE_LOCATION[3]=/kernel/3rdparty/vbox
+BUILT_MODULE_LOCATION[3]=vboxpci/
+BUILT_MODULE_NAME[3]=vboxpci
+AUTOINSTALL=yes
+EOF
+
+# install udev rules
+mkdir -p %{buildroot}%{_udevrulesdir}
+cat > %{buildroot}%{_udevrulesdir}/%{name}.rules << EOF
+KERNEL=="%{kname}", NAME="vboxdrv", OWNER="root", GROUP="root", MODE="0600"
+SUBSYSTEM=="usb_device", ACTION=="add", RUN+="%{_datadir}/%{name}/VBoxCreateUSBNode.sh \$major \$minor \$attr{bDeviceClass} vboxusers"
+SUBSYSTEM=="usb", ACTION=="add", ENV{DEVTYPE}=="usb_device", RUN+="%{_datadir}/%{name}/VBoxCreateUSBNode.sh \$major \$minor \$attr{bDeviceClass} vboxusers"
+SUBSYSTEM=="usb_device", ACTION=="remove", RUN+="%{_datadir}/%{name}/VBoxCreateUSBNode.sh --remove \$major \$minor"
+SUBSYSTEM=="usb", ACTION=="remove", ENV{DEVTYPE}=="usb_device", RUN+="%{_datadir}/%{name}/VBoxCreateUSBNode.sh --remove \$major \$minor"
+EOF
+cat > %{buildroot}%{_udevrulesdir}/vbox-additions.rules << EOF
+KERNEL=="vboxguest", NAME="vboxguest", OWNER="root", MODE="0660"
+KERNEL=="vboxuser", NAME="vboxuser", OWNER="root", MODE="0666"
+EOF
+
+# install vboxweb
+install -m755 src/VBox/Installer/linux/vboxweb-service.sh %{buildroot}%{_initrddir}/vboxweb-service
+
+# install additions
+%if %{build_additions}
+# vboxadd-timesync should probably be renamed vboxadd now, but renaming initscripts
+# cleanly is hacky business
+install -D -m644 %{SOURCE3} %{buildroot}%{_unitdir}/vboxadd-timesync.service
+
+install -d %{buildroot}%{_sysconfdir}/X11/xinit.d
+install -m755 src/VBox/Additions/x11/Installer/98vboxadd-xclient %{buildroot}%{_sysconfdir}/X11/xinit.d
+
+pushd out/%{vbox_platform}/release/bin/additions
+  install -d %{buildroot}/sbin %{buildroot}%{_sbindir} %{buildroot}/%{_libdir}/dri
+  install -m755 mount.vboxsf %{buildroot}%{_sbindir}/mount.vboxsf
+  install -m755 VBoxService %{buildroot}%{_sbindir}
+
+  install -m755 VBoxClient %{buildroot}%{_bindir}
+  install -m755 VBoxControl %{buildroot}%{_bindir}
+
+  install -m755 VBoxOGL*.so %{buildroot}%{_libdir}
+
+  %if %{build_vboxvideo}
+  ln -s -f ../VBoxOGL.so %{buildroot}%{_libdir}/dri/vboxvideo_dri.so
+  %endif
+
+  install -d %{buildroot}%{_sysconfdir}/modprobe.preload.d
+  cat > %{buildroot}%{_sysconfdir}/modprobe.preload.d/vbox-guest-additions << EOF
+vboxguest
+vboxsf
+EOF
+  install -d %{buildroot}%{_libdir}/xorg/modules/{input,drivers}
+
+  %if %{build_vboxvideo}
+  install vboxvideo_drv_system.so %{buildroot}%{_libdir}/xorg/modules/drivers/vboxvideo_drv.so
+  %endif
+
+  mkdir -p %{buildroot}%{_usr}/src/vboxadditions-%{version}-%{release}
+  cat > %{buildroot}%{_usr}/src/vboxadditions-%{version}-%{release}/dkms.conf << EOF
+PACKAGE_NAME=vboxadditions
+PACKAGE_VERSION=%{version}-%{release}
+MAKE[0]="'make' -j\${parallel_jobs} -C \$kernel_source_dir M=\$dkms_tree/\$module/\$module_version/build/vboxguest &&
+cp \$dkms_tree/\$module/\$module_version/build/vboxguest/Module.symvers \$dkms_tree/\$module/\$module_version/build/vboxsf &&
+'make' -j\${parallel_jobs} -C \$kernel_source_dir M=\$dkms_tree/\$module/\$module_version/build/vboxsf &&
+cp \$dkms_tree/\$module/\$module_version/build/vboxsf/Module.symvers \$dkms_tree/\$module/\$module_version/build/vboxvideo &&
+'make' -j\${parallel_jobs} -C \$kernel_source_dir M=\$dkms_tree/\$module/\$module_version/build/vboxvideo"
+EOF
+  i=0
+  for kmod in vboxguest vboxsf vboxvideo; do
+    mkdir -p %{buildroot}%{_usr}/src/vboxadditions-%{version}-%{release}/$kmod
+    cp -a src/$kmod/* %{buildroot}%{_usr}/src/vboxadditions-%{version}-%{release}/$kmod/
+    cat >> %{buildroot}%{_usr}/src/vboxadditions-%{version}-%{release}/dkms.conf << EOF
+DEST_MODULE_LOCATION[$i]=/kernel/3rdparty/vbox
+BUILT_MODULE_LOCATION[$i]=$kmod/
+BUILT_MODULE_NAME[$i]=$kmod
+EOF
+    i=$((i+1))
+  done
+  cat >> %{buildroot}%{_usr}/src/vboxadditions-%{version}-%{release}/dkms.conf << EOF
+CLEAN="'make' -j\${parallel_jobs} -C \$kernel_source_dir M=\$dkms_tree/\$module/\$module_version/build/vboxguest clean &&
+'make' -j\${parallel_jobs} -C \$kernel_source_dir M=\$dkms_tree/\$module/\$module_version/build/vboxsf clean &&
+'make' -j\${parallel_jobs} -C \$kernel_source_dir M=\$dkms_tree/\$module/\$module_version/build/vboxvideo clean "
+AUTOINSTALL=yes
+EOF
+popd
+  sed 's/^\(.package.*-kernel-\)\(.*-latest\)\(.*\)\\$/\1\2\3Obsoletes: vboxsf-kernel-\2 vboxvideo-kernel-\2\\n\\/' /etc/dkms/template-dkms-mkrpm.spec > %{buildroot}%{_usr}/src/vboxadditions-%{version}-%{release}/vboxadditions-dkms-mkrpm.spec
+%endif
+
+# desktop integration
+#
+# install icons
+mkdir -p %{buildroot}%{_iconsdir}/hicolor/{16x16,32x32,48x48,64x64,128x128}/{apps,mimetypes}
+pushd out/%{vbox_platform}/release/bin/icons/
+for i in 16 32 48 64 128; do
+cp -a "$i"x"$i"/virtualbox.png %{buildroot}%{_iconsdir}/hicolor/"$i"x"$i"/apps/
+cp -a "$i"x"$i"/virtualbox-*.png %{buildroot}%{_iconsdir}/hicolor/"$i"x"$i"/mimetypes/
+done
+popd
+
+# install menu entries
+
+mkdir -p %{buildroot}%{_datadir}/applications
+cat > %{buildroot}%{_datadir}/applications/mageia-%{name}.desktop << EOF
+[Desktop Entry]
+Name=VirtualBox
+GenericName=Virtual Machine
+GenericName[de]=Virtuelle Maschine
+GenericName[ru]=Виртуальная машина
+Comment=Run several virtual systems on a single host computer
+Comment[de]=Verschiedene virtuelle Systeme auf einem Hostrechner laufen lassen
+Comment[it]=Esegue diversi sistemi virtuali su un singolo computer
+Comment[pl]=Uruchamianie wielu systemów wirtualnych na jednym komputerze gospodarza
+Comment[sv]=Kör flera virtuella system på en enda värddator
+Comment[ko]=단일 호스트 컴퓨터에 여러 개의 가상 시스템 실행
+Comment[ru]=Управление несколькими виртуальными системами на одном главном компьютере
+Comment[af]=Loop verskeie virtuele stelsels op 'n enkele gasheerrekenaar
+Comment[sq]=Nis dis sisteme në një kompjuter të vetëm mbartës
+Comment[ast]=Execute varios sistemes virtuales nun sólu equipu anfitrión
+Comment[bn]=একটি একক হোস্ট কম্পিউটারে একাধিক ভার্চুয়াল সিস্টেম চালান
+Comment[bg]=Изпълнение на няколко виртуални системи на един компютър
+Comment[bs]=Pokrenite više virtuelnih sistema na jednom domaćinskom računaru
+Comment[pt_BR]=Execute vários sistemas virtuais em um único computador hospedeiro
+Comment[ca]=Executeu diversos sistemes virtuals en un únic ordinador hoste
+Comment[ca@valencia]=Executeu diversos sistemes virtuals en un únic ordinador hoste
+Comment[zh_HK]=於單一主機電腦執行多個虛擬機器
+Comment[zh_CN]=在一个主机上运行多个虚拟系统
+Comment[zh_TW]=於單一主機電腦執行多個虛擬機器
+Comment[crh]=Tek bir bilgisayar üzerinde birden fazla sanal işletim sistemi çalıştırın
+Comment[cs]=Spouštění různých virtuálních systémů na hostitelském počítači
+Comment[da]=Kør flere virtuelle maskiner på en enkelt computer
+Comment[fi]=Suorita useita virtuaalisia järjestelmiä yhdellä isäntäkoneella
+Comment[et]=Käivita mitmeid virtuaalseid süsteeme ühel peaarvutil
+Comment[nl]=Draai verschillende virtuele systemen op één enkele hostcomputer
+Comment[gl]=Execute varios sistemas virtuais nun único computador
+Comment[fr]=Exécuter plusieurs systèmes virtuels sur le même ordinateur hôte
+Comment[el]=Χρήση πολλαπλών εικονικών συστημάτων από έναν υπολογιστή
+Comment[hu]=Több virtuális rendszer futtatása egy számítógépen
+Comment[ky]=Бир негизги компьютерде бир нече виртуалдык тутумдарды жүргүзүү
+Comment[ja]=一つのホストコンピューター上で複数の仮想システムを走らせます
+Comment[lt]=Leiskite kelias virtualias sistemas viename kompiuteryje
+Comment[ms]=Jalankan beberapa sistem maya dalam satu komputer hos
+Comment[oc]=Executar mantun sistèma virtuals sul meteis ordenador òste
+Comment[nb]=Kjør opptil flere virtuelle systemer på én vertsmaskin
+Comment[pt]=Corra diversos sistemas virtuais num único computador
+Comment[ro]=Rulați mai multe sisteme virtuale pe calculatorul gazdă
+Comment[sl]=Zagon več navideznih sistemov na enem gostiteljskem računalniku
+Comment[es]=Ejecute varios sistemas virtuales en un sólo equipo anfitrión
+Comment[vi]=Chạy nhiều hệ thống ảo trên một máy chủ đơn
+Comment[uk]=Запуск декількох віртуальних систем на одному базовому комп'ютері
+Comment[tr]=Tek bir bilgisayar üzerinde birden fazla sanal işletim sistemi çalıştırın
+Exec=%{oname} %U
+Icon=%{name}
+Type=Application
+Terminal=false
+Categories=Emulator;
+MimeType=application/x-virtualbox-vbox;application/x-virtualbox-vbox-extpack;application/x-virtualbox-ovf;application/x-virtualbox-ova;
+EOF
+
+# install mime types
+install -D -m644 out/%{vbox_platform}/release/bin/virtualbox.xml %{buildroot}%{_datadir}/mime/packages/virtualbox.xml
+
+
+# add missing makefile for kernel module
+install -m644 src/VBox/HostDrivers/Support/linux/Makefile %{buildroot}%{_usr}/src/%{name}-%{version}-%{release}/
+
+%if %{build_sdk}
+mkdir -p %{buildroot}%{vboxpydir}
+
+pushd out/%{vbox_platform}/release/bin/sdk/installer
+VBOX_INSTALL_PATH=%{vboxlibdir} \
+        python vboxapisetup.py install --prefix %{_prefix} --root %{buildroot}
+popd
+rm -rf %{buildroot}%{vboxlibdir}/sdk/installer
+%else
+rm -rf %{buildroot}%{vboxlibdir}/sdk
+%endif
+
+# remove unpackaged files
+rm -rf %{buildroot}%{vboxlibdir}/{src,testcase}
+rm  -f %{buildroot}%{vboxlibdir}/tst*
+rm  -f %{buildroot}%{vboxlibdir}/vboxkeyboard.tar.gz
+rm  -f %{buildroot}%{vboxlibdir}/SUP*
+rm  -f %{buildroot}%{vboxlibdir}/xpidl
+
+# install PAM module:
+install -D -m755 out/%{vbox_platform}/release/bin/additions/pam_vbox.so %{buildroot}/%{_lib}/security/pam_vbox.so
+
+# install the user manual
+%if %build_doc
+install -D -m644 out/%{vbox_platform}/release/bin/UserManual.pdf %{buildroot}/%{_defaultdocdir}/%{name}/UserManual.pdf
+rm -f %{buildroot}%{vboxlibdir}/UserManual.pdf
+%endif
+
+%post
+%_tmpfilescreate %{name}
+%_post_service %{name}
+
+%_add_group_helper %{name} 1 vboxusers
+
+
+# (Debian) Build usb device tree
+for i in /sys/bus/usb/devices/*; do
+	if test -r "$i/dev"; then
+		dev="`cat "$i/dev" 2> /dev/null || true`"
+		major="`expr "$dev" : '\(.*\):' 2> /dev/null || true`"
+		minor="`expr "$dev" : '.*:\(.*\)' 2> /dev/null || true`"
+		class="`cat $i/bDeviceClass 2> /dev/null || true`"
+		/usr/share/virtualbox/VBoxCreateUSBNode.sh "$major" "$minor" "$class" vboxusers 2>/dev/null || true
+	fi
+done
+
+%postun
+if [ "$1" -ge "1" ]; then
+  /sbin/service %{name} condrestart > /dev/null 2>&1 || :
+fi
+
+%_del_group_helper %{name} 1 vboxusers
+
+%preun
+%_preun_service %{name}
+
+%post -n dkms-%{name}
+    set -x
+    /usr/sbin/dkms --rpm_safe_upgrade add -m %{name} -v %{version}-%{release}
+if [ -z "$DURING_INSTALL" ] ; then
+    /usr/sbin/dkms --rpm_safe_upgrade build -m %{name} -v %{version}-%{release} &&
+    /usr/sbin/dkms --rpm_safe_upgrade install -m %{name} -v %{version}-%{release} &&
+    /sbin/rmmod vboxpci &>/dev/null
+    /sbin/rmmod vboxnetflt &>/dev/null
+    /sbin/rmmod vboxnetadp &>/dev/null
+    /sbin/rmmod %{kname} &>/dev/null
+    /sbin/modprobe %{kname} &>/dev/null
+    /sbin/modprobe vboxnetflt &>/dev/null
+    /sbin/modprobe vboxnetadp &>/dev/null
+    /sbin/modprobe vboxpci &>/dev/null
+    :
+fi
+
+%preun -n dkms-%{name}
+if [ "$1" = "0" ]; then
+	/sbin/rmmod vboxpci >/dev/null 2>&1
+	/sbin/rmmod vboxnetadp >/dev/null 2>&1
+	/sbin/rmmod vboxnetflt >/dev/null 2>&1
+	/sbin/rmmod %{kname} >/dev/null 2>&1
+fi
+set -x
+/usr/sbin/dkms --rpm_safe_upgrade remove -m %{name} -v %{version}-%{release} --all || :
+
+%if %{build_additions}
+%post guest-additions
+%_post_service vboxadd-timesync
+
+%_add_group_helper %{name} 1 vboxsf
+
+%preun guest-additions
+%_preun_service vboxadd-timesync
+
+%postun guest-additions
+%_del_group_helper %{name} 1 vboxsf
+
+%post -n dkms-vboxadditions
+    set -x
+    /usr/sbin/dkms --rpm_safe_upgrade add -m vboxadditions -v %{version}-%{release}
+if [ -z "$DURING_INSTALL" ] ; then
+    /usr/sbin/dkms --rpm_safe_upgrade build -m vboxadditions -v %{version}-%{release} &&
+    /usr/sbin/dkms --rpm_safe_upgrade install -m vboxadditions -v %{version}-%{release}
+    :
+fi
+
+%preun -n dkms-vboxadditions
+set -x
+/usr/sbin/dkms --rpm_safe_upgrade remove -m vboxadditions -v %{version}-%{release} --all
+:
+
+%endif
+
+%files
+%config %{_sysconfdir}/vbox/vbox.cfg
+%{_bindir}/%{oname}
+%{_bindir}/VBoxManage
+%{_bindir}/VBoxSDL
+%{_bindir}/VBoxHeadless
+%{_bindir}/VBoxTunctl
+%{_bindir}/VBoxNetAdpCtl
+%{_bindir}/VBoxNetDHCP
+%{_bindir}/vboxwebsrv
+%exclude %{vboxlibdir}/sdk
+%dir %{vboxlibdir}
+%{vboxlibdir}/*
+%attr(4711,root,root) %{vboxlibdir}/VBoxHeadless
+%attr(4711,root,root) %{vboxlibdir}/VBoxSDL
+%attr(4711,root,root) %{vboxlibdir}/VirtualBox
+%attr(4711,root,root) %{vboxlibdir}/VBoxNetAdpCtl
+%attr(4711,root,root) %{vboxlibdir}/VBoxNetDHCP
+%attr(644,root,root) %{vboxlibdir}/*.rc
+%attr(644,root,root) %{vboxlibdir}/*.r0
+%dir %{vboxdatadir}
+%{vboxdatadir}/*
+# initscripts integration
+%{_initrddir}/%{name}
+%{_initrddir}/vboxweb-service
+%{_udevrulesdir}/%{name}.rules
+%{_tmpfilesdir}/%{name}.conf
+# desktop integration
+%{_datadir}/icons/hicolor/*/*/*.png
+%{_datadir}/applications/mageia-%{name}.desktop
+%{_datadir}/mime/packages/virtualbox.xml
+
+%files -n dkms-%{name}
+%{_usr}/src/%{name}-%{version}-%{release}
+
+%if %{build_additions}
+%files guest-additions
+/%{_lib}/security/pam_vbox.so
+%{_sbindir}/mount.vboxsf
+%{_unitdir}/vboxadd-timesync.service
+%{_sbindir}/VBoxService
+%{_bindir}/VBoxClient
+%{_bindir}/VBoxControl
+%{_udevrulesdir}/vbox-additions.rules
+%{_sysconfdir}/X11/xinit.d/98vboxadd-xclient
+%{_sysconfdir}/modprobe.preload.d/vbox-guest-additions
+
+%files -n x11-driver-video-vboxvideo
+%{_libdir}/VBoxOGL*
+%if %{build_vboxvideo}
+%{_libdir}/xorg/modules/drivers/vboxvideo_drv.so
+%{_libdir}/dri/vboxvideo_dri.so
+%endif
+
+%files -n dkms-vboxadditions
+%{_usr}/src/vbox*-%{version}-%{release}
+%endif
+
+%if %build_doc
+%files doc
+%doc %{_defaultdocdir}/%{name}/UserManual.pdf
+%endif
+
+%if %{build_sdk}
+%files devel
+%dir %{vboxlibdir}/sdk
+%{vboxlibdir}/sdk/*
+
+%files -n python-%{name}
+%{vboxpydir}
+%{py_puresitedir}/vboxapi*.egg-info
+%endif

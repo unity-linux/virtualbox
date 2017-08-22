@@ -1,0 +1,18 @@
+diff -Nurp VirtualBox-5.1.0.p3/src/VBox/Additions/linux/installer/vboxadd-service.sh VirtualBox-5.1.0.p4/src/VBox/Additions/linux/installer/vboxadd-service.sh
+--- VirtualBox-5.1.0.p3/src/VBox/Additions/linux/installer/vboxadd-service.sh	2016-07-12 17:47:43.000000000 +0300
++++ VirtualBox-5.1.0.p4/src/VBox/Additions/linux/installer/vboxadd-service.sh	2016-07-13 00:56:30.154989642 +0300
+@@ -18,10 +18,12 @@
+ #
+ ### BEGIN INIT INFO
+ # Provides:       vboxadd-service
+-# Required-Start: vboxadd
+-# Required-Stop:  vboxadd
++# Should-Start:   dkms
+ # Default-Start:  2 3 4 5
+ # Default-Stop:   0 1 6
++# Required-Start:
++# Required-Stop:
++# Short-Description: VirtualBox Additions Service
+ # Description:    VirtualBox Additions Service
+ ### END INIT INFO
+ 
