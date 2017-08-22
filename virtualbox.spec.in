@@ -653,6 +653,7 @@ set -x
 if [ -z "$DURING_INSTALL" ] ; then
     /usr/sbin/dkms --rpm_safe_upgrade build -m vboxadditions -v %{version}-%{release} &&
     /usr/sbin/dkms --rpm_safe_upgrade install -m vboxadditions -v %{version}-%{release}
+    /sbin/modprobe vboxvideo &>/dev/null
     :
 fi
 
@@ -735,3 +736,5 @@ set -x
 %{vboxpydir}
 %{py_puresitedir}/vboxapi*.egg-info
 %endif
+
+%changelog
