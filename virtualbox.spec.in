@@ -64,10 +64,10 @@ Patch4:		VirtualBox-5.1.0-fix-vboxadd-req.patch
 # - mkisofs: we're not going to build the additions .iso file
 # - makeself: we're not going to create the stanalone .run installers
 Patch9:		VirtualBox-5.1.0-dont-check-for-mkisofs-or-makeself.patch
-# add Mageia support (tmb: submitted upstream 2011-10-22)
-Patch13:	VirtualBox-5.1.24-add-Mageia-support.patch
-# (tmb) Default to Mageia
-Patch14:	VirtualBox-5.1.0-default-to-Mageia.patch
+# Add Unity support
+Patch13:	VirtualBox-5.1.24-add-Unity-support.patch
+# Default to Unity
+Patch14:	VirtualBox-5.1.0-default-to-Unity.patch
 # (tmb) default to no update checks as we provide rpms
 Patch15:	VirtualBox-5.1.0-noupdate-check.patch
 # (tmb) fix build with gsoap >= 2.8.13

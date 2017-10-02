@@ -1,6 +1,6 @@
 NAME=virtualbox
-DISTREL=5
-VERSION=5.1.26
+DISTREL=2
+VERSION=5.1.28
 
 RPMBUILD=$(shell which rpmbuild)
 CAT=$(shell which cat)

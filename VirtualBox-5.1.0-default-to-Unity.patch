@@ -16,15 +16,15 @@ diff -Nurp VirtualBox-5.1.0.p13/src/VBox/Frontends/VirtualBox/src/widgets/UIName
          if (iTypeIndex != -1)
              m_pComboType->setCurrentIndex(iTypeIndex);
      }
-+    /* Or select Mageia item for Linux family as default: */
++    /* Or select Unity item for Linux family as default: */
 +    else if (strFamilyId == "Linux")
 +    {
-+        QString strDefaultID = "Mageia";
++        QString strDefaultID = "Unity";
 +        if (ARCH_BITS == 64 && m_fSupportsHWVirtEx && m_fSupportsLongMode)
 +            strDefaultID += "_64";
-+        const int iIndexMageia = m_pComboType->findData(strDefaultID, TypeID);
-+        if (iIndexMageia != -1)
-+            m_pComboType->setCurrentIndex(iIndexMageia);
++        const int iIndexUnity = m_pComboType->findData(strDefaultID, TypeID);
++        if (iIndexUnity != -1)
++            m_pComboType->setCurrentIndex(iIndexUnity);
 +    }
      /* Or select Windows 7 item for Windows family as default: */
      else if (strFamilyId == "Windows")
