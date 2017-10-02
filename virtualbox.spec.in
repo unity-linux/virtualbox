@@ -55,8 +55,8 @@ Source10:	virtualbox.png
 Source11:	virtualbox.16.png
 Source12:	virtualbox.48.png
 # (tmb: mga icons submitted upstream 2011-10-22)
-Source20:       os_mageia.png
-Source21:       os_mageia_64.png
+Source20:       os_unity.png
+Source21:       os_unity_64.png
 Patch2:		VirtualBox-5.1.0-kernelrelease.patch
 Patch3:		VirtualBox-5.1.0-futex.patch
 Patch4:		VirtualBox-5.1.0-fix-vboxadd-req.patch
@@ -260,7 +260,7 @@ Python XPCOM bindings to %{name}.
 %setup -q -n %{distname}
 %autopatch -p1
 
-# add Mageia images
+# add Unity images
 cp -a %{SOURCE20} %{SOURCE21} src/VBox/Frontends/VirtualBox/images/
 
 # add our kernel headers in place
@@ -489,7 +489,7 @@ popd
 # install menu entries
 
 mkdir -p %{buildroot}%{_datadir}/applications
-cat > %{buildroot}%{_datadir}/applications/mageia-%{name}.desktop << EOF
+cat > %{buildroot}%{_datadir}/applications/unity-%{name}.desktop << EOF
 [Desktop Entry]
 Name=VirtualBox
 GenericName=Virtual Machine
@@ -696,7 +696,7 @@ set -x
 %{_tmpfilesdir}/%{name}.conf
 # desktop integration
 %{_datadir}/icons/hicolor/*/*/*.png
-%{_datadir}/applications/mageia-%{name}.desktop
+%{_datadir}/applications/unity-%{name}.desktop
 %{_datadir}/mime/packages/virtualbox.xml
 
 %files -n dkms-%{name}
